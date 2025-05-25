@@ -1,0 +1,2 @@
+# processor_project
+ ELEC 2602. A Processor 20 Semester 1 Project Due: Week 13, your final lab session Completion of this project is likely to require working from home as well as during lab sessions. Most of the design work can/should be completed in simulation. The tutors can provide guidance and advice, but they will not tell you how to implement your project. You must demonstrate your final project to your tutors during your final lab session (or before). Problem
