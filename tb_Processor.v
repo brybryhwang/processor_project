@@ -26,4 +26,17 @@ module tb_Processor;
 
         $finish;
     end
+
+        initial begin
+
+        $dumpfile("<<chosen_output_file_name>>.vcd");
+
+        $dumpvars(0, <<signals_you_want_to_test>>);
+
+        #1000 
+
+        $finish;
+
+        end
+        
 endmodule
