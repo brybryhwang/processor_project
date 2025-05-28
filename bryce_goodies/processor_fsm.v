@@ -6,7 +6,8 @@ module processor_fsm (
     output reg RegWrite,
     output reg [1:0] ALUOp,
     output reg IRWrite,
-    output reg PCWrite
+    output reg PCWrite,
+    output reg LoadDirect
 );
 
 localparam FETCH        = 4'd0;
@@ -60,6 +61,7 @@ always @(*) begin
     ALUOp = 2'b00;
     IRWrite = 0;
     PCWrite = 0;
+    LoadDirect = 0;
 
     case (state)
         FETCH: begin
@@ -67,7 +69,7 @@ always @(*) begin
         end
         LOAD: begin
             RegWrite = 1;
-            ALUOp = 2'b00; // Assume ALU pass-through for load
+            LoadDirect = 1;
         end
         MOV: begin
             RegWrite = 1;
