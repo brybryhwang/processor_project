@@ -14,12 +14,10 @@ module ControlFSM(
     output reg [2:0] aluop
 );
 
-    // FSM states
-    typedef enum logic [2:0] {
-        IFETCH, DECODE, EXECUTE, MEM, WB, BRANCH, JUMP
-    } state_t;
+    parameter IFETCH = 3'd0, DECODE = 3'd1, EXECUTE = 3'd2, 
+             MEM = 3'd3, WB = 3'd4, BRANCH = 3'd5, JUMP = 3'd6;
 
-    state_t current_state, next_state;
+    reg [2:0] current_state, next_state;
 
     // Instruction opcodes
     localparam [3:0]

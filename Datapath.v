@@ -51,7 +51,7 @@ module Datapath (
             pc <= pc + instruction[7:0]; // Relative branch
         else
             pc <= pc + 1;
-				
+	end			
 				
 	 reg [15:0] instr_mem [0:31];
 	 initial begin
@@ -71,6 +71,7 @@ module Datapath (
 		  data_mem[1] = 16'd3;   // mem[1] = 3
 		  data_mem[2] = 16'd0;   // result goes here
 	 end
+endmodule
 
 			
 	  			
