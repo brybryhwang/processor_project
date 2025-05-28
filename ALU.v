@@ -1,20 +1,20 @@
 module ALU (
-    input [15:0] a,
-    input [15:0] b,
-    input [2:0] op,
-    output reg [15:0] result,
-    output zero
+    input  logic [15:0] a,
+    input  logic [15:0] b,
+    input  logic [1:0]  op,      // 2-bit opcode
+    output logic [15:0] result,
+    output logic        zero
 );
-    always @(*) begin
-        case (op)
-            3'b000: result = a + b;
-            3'b001: result = a - b;
-            3'b010: result = a & b;
-            3'b011: result = a | b;
-            3'b100: result = b;        // mov (pass through)
-            default: result = 0;
+    typedef enum logic [1:0] {ADD=2'b00, XOR=2'b01, MOV=2'b10} alu_op_t;
+
+    always_comb begin
+        unique case (alu_op_t'(op))
+            ADD: result = a + b;
+            XOR: result = a ^ b;
+            MOV: result = b;       // pass-through
+            default: result = 16'h0000;
         endcase
     end
 
-    assign zero = (result == 0);
+    assign zero = (result == 16'h0000);
 endmodule

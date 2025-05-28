@@ -1,53 +1,62 @@
-module Processor (
-    input clk,
-    input reset,
-    input [2:0] SW,          // Register select input
-    output [6:0] HEX0        // 7-segment output
+// -----------------------------------------------------------------------------
+//  Processor_debug – top wrapper with $display hooks
+// -----------------------------------------------------------------------------
+module Processor(
+    input  logic        clk,
+    input  logic        reset,
+    input  logic [2:0]  SW,
+    output logic [6:0]  HEX0
 );
-    wire regwrite, alusrc, memread, memwrite, memtoreg, branch, jump;
-    wire [2:0] aluop;
-    wire [3:0] opcode;
-    wire [15:0] reg_out;
-    wire zero;
 
-    // FSM instance
-    ControlFSM control (
-        .clk(clk),
-        .reset(reset),
-        .opcode(opcode),
-        .zero(zero),
-        .regwrite(regwrite),
-        .alusrc(alusrc),
-        .memread(memread),
-        .memwrite(memwrite),
-        .memtoreg(memtoreg),
-        .branch(branch),
-        .jump(jump),
-        .aluop(aluop)
+    //----------- wires --------------------------------------------------------
+    logic        regwrite, alusrc, memread, memwrite, memtoreg;
+    logic [1:0]  aluop;
+    logic        pc_en, ir_write;
+    logic [1:0]  opcode;
+    logic        zero;
+    logic [15:0] reg_out;
+
+    //----------- Controller ---------------------------------------------------
+    ControlFSM ctrl (
+        .clk       (clk),
+        .reset     (reset),
+        .opcode    (opcode),
+        .zero      (zero),
+
+        .regwrite  (regwrite),
+        .alusrc    (alusrc),
+        .memread   (memread),
+        .memwrite  (memwrite),
+        .memtoreg  (memtoreg),
+        .aluop     (aluop),
+        .pc_en     (pc_en),
+        .ir_write  (ir_write)
     );
 
-    // Datapath instance
     Datapath datapath (
-        .clk(clk),
-        .reset(reset),
-        .regwrite(regwrite),
-        .alusrc(alusrc),
-        .memread(memread),
-        .memwrite(memwrite),
-        .memtoreg(memtoreg),
-        .branch(branch),
-        .jump(jump),
-        .aluop(aluop),
-        .data_in(16'b0),          // Optional external data in
-        .reg_select(SW),
-        .reg_out(reg_out),
-        .opcode(opcode),
-        .zero(zero)
+        .clk        (clk),
+        .reset      (reset),
+
+        .regwrite   (regwrite),
+        .alusrc     (alusrc),
+        .memread    (memread),
+        .memwrite   (memwrite),
+        .memtoreg   (memtoreg),
+        .aluop      (aluop),
+        .pc_en      (pc_en),
+        .ir_write   (ir_write),
+
+        .reg_select (SW),
+        .reg_out    (reg_out),
+
+        .opcode     (opcode),
+        .zero       (zero)
     );
 
-    // HEX Display (only lower 4 bits shown)
-    HexDisplay display (
-        .in(reg_out[3:0]),
-        .out(HEX0)
-    );
+    //----------- HEX display --------------------------------------------------
+    HexDisplay disp (.in(reg_out[3:0]), .out(HEX0));
+
+    always_ff @(posedge clk)
+        $display("[TOP] t=%0t  pc_en=%0b ir_w=%0b rw=%0b memR=%0b memW=%0b reg_out=%h",
+                 $time, pc_en, ir_write, regwrite, memread, memwrite, reg_out);
 endmodule

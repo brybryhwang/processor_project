@@ -1,123 +1,93 @@
-module ControlFSM(
-    input clk,
-    input reset,
-    input [3:0] opcode,
-    input zero,
+// -----------------------------------------------------------------------------
+//  ControlFSM_debug – 5-state controller with verbose $display traces
+//  Instructions : ADD(00) XOR(01) MOV(10) LOAD(11)
+// -----------------------------------------------------------------------------
+module ControlFSM (
+    input  logic        clk,
+    input  logic        reset,
+    input  logic [1:0]  opcode,     // from IR
+    input  logic        zero,       // reserved
 
-    output reg regwrite,
-    output reg alusrc,
-    output reg memread,
-    output reg memwrite,
-    output reg memtoreg,
-    output reg branch,
-    output reg jump,
-    output reg [2:0] aluop
+    // ---- to Datapath ----
+    output logic        regwrite,
+    output logic        alusrc,
+    output logic        memread,
+    output logic        memwrite,
+    output logic        memtoreg,
+    output logic [1:0]  aluop,
+    output logic        pc_en,
+    output logic        ir_write
 );
 
-    // FSM states
-    typedef enum logic [2:0] {
-        IFETCH, DECODE, EXECUTE, MEM, WB, BRANCH, JUMP
-    } state_t;
+    //---------------- enums ---------------------------------------------------
+    typedef enum logic [2:0] { IFETCH, DECODE, EXECUTE, MEM, WB } state_t;
 
-    state_t current_state, next_state;
+    localparam  OP_ADD  = 2'b00,
+                OP_XOR  = 2'b01,
+                OP_MOV  = 2'b10,
+                OP_LOAD = 2'b11;
 
-    // Instruction opcodes
-    localparam [3:0]
-        OP_ADD   = 4'b0000,
-        OP_SUB   = 4'b0001,
-        OP_AND   = 4'b0010,
-        OP_OR    = 4'b0011,
-        OP_MOV   = 4'b0100,
-        OP_LOAD  = 4'b1000,
-        OP_STORE = 4'b1001,
-        OP_BEQ   = 4'b1100,
-        OP_JMP   = 4'b1101;
+    localparam  ALU_ADD  = 2'b00,
+                ALU_XOR  = 2'b01,
+                ALU_PASS = 2'b10;
 
-    // ALU Operations
-    localparam [2:0]
-        ALU_ADD = 3'b000,
-        ALU_SUB = 3'b001,
-        ALU_AND = 3'b010,
-        ALU_OR  = 3'b011,
-        ALU_PASS = 3'b100;
+    //---------------- state register -----------------------------------------
+    state_t s, s_next;
 
-    // FSM state register
-    always @(posedge clk or posedge reset) begin
-        if (reset)
-            current_state <= IFETCH;
-        else
-            current_state <= next_state;
-    end
+    always_ff @(posedge clk or posedge reset)
+        if (reset) s <= IFETCH;
+        else       s <= s_next;
 
-    // State transitions
-    always @(*) begin
-        case (current_state)
-            IFETCH:  next_state = DECODE;
-            DECODE: begin
-                case (opcode)
-                    OP_ADD, OP_SUB, OP_AND, OP_OR, OP_MOV: next_state = EXECUTE;
-                    OP_LOAD, OP_STORE:                     next_state = MEM;
-                    OP_BEQ:                                next_state = BRANCH;
-                    OP_JMP:                                next_state = JUMP;
-                    default:                               next_state = IFETCH;
-                endcase
-            end
-            EXECUTE: next_state = WB;
-            MEM:     next_state = WB;
-            WB:      next_state = IFETCH;
-            BRANCH:  next_state = IFETCH;
-            JUMP:    next_state = IFETCH;
-            default: next_state = IFETCH;
+    //---------------- next-state ---------------------------------------------
+    always_comb begin
+        unique case (s)
+            IFETCH : s_next = DECODE;
+            DECODE : s_next = EXECUTE;
+            EXECUTE: s_next = (opcode == OP_LOAD) ? MEM : WB;
+            MEM    : s_next = WB;
+            WB     : s_next = IFETCH;
+            default: s_next = IFETCH;
         endcase
     end
 
-    // Control outputs
-    always @(*) begin
-        // Default all signals
-        regwrite   = 0;
-        alusrc     = 0;
-        memread    = 0;
-        memwrite   = 0;
-        memtoreg   = 0;
-        branch     = 0;
-        jump       = 0;
-        aluop      = ALU_ADD;
+    //---------------- output defaults ----------------------------------------
+    always_comb begin
+        // safe defaults
+        regwrite = 0; alusrc = 0; memread = 0; memwrite = 0; memtoreg = 0;
+        aluop    = ALU_ADD; pc_en = 0; ir_write = 0;
 
-        case (current_state)
-            EXECUTE: begin
+        unique case (s)
+
+            IFETCH : begin
+                pc_en    = 1;   // PC++
+                ir_write = 1;   // IR latch
+            end
+
+            EXECUTE : begin
+                unique case (opcode)
+                    OP_ADD : begin regwrite=1; aluop=ALU_ADD;  end
+                    OP_XOR : begin regwrite=1; aluop=ALU_XOR;  end
+                    OP_MOV : begin regwrite=1; aluop=ALU_PASS; end
+                    OP_LOAD: begin alusrc=1;   aluop=ALU_PASS; end
+                endcase
+            end
+
+            MEM : if (opcode==OP_LOAD) begin
+                alusrc   = 1;
+                memread  = 1;
+                memtoreg = 1;
+            end
+
+            WB  : if (opcode==OP_LOAD) begin
                 regwrite = 1;
-                case (opcode)
-                    OP_ADD: aluop = ALU_ADD;
-                    OP_SUB: aluop = ALU_SUB;
-                    OP_AND: aluop = ALU_AND;
-                    OP_OR:  aluop = ALU_OR;
-                    OP_MOV: aluop = ALU_PASS;
-                endcase
-            end
-            MEM: begin
-                alusrc = 1;
-                if (opcode == OP_LOAD) begin
-                    memread = 1;
-                end else if (opcode == OP_STORE) begin
-                    memwrite = 1;
-                    regwrite = 0;
-                end
-            end
-            WB: begin
-                if (opcode == OP_LOAD) begin
-                    regwrite = 1;
-                    memtoreg = 1;
-                end
-            end
-            BRANCH: begin
-                if (zero)
-                    branch = 1;
-                aluop = ALU_SUB;
-            end
-            JUMP: begin
-                jump = 1;
+                memtoreg = 1;
             end
         endcase
     end
 
+    //------------------------  DEBUG PRINTS  ----------------------------------
+    always_ff @(posedge clk) begin
+        $display("[FSM] t=%0t  state=%0d->%0d  op=%0d  rw=%0b memR=%0b memW=%0b aluop=%0d",
+                 $time, s, s_next, opcode, regwrite, memread, memwrite, aluop);
+    end
 endmodule
