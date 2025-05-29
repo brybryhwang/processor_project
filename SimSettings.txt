@@ -1,0 +1,21 @@
+# Go into the Top module
+add wave -position end sim:/Testbench/uut/pc
+add wave -position end sim:/Testbench/uut/instr
+
+# FSM outputs
+add wave -position end sim:/Testbench/uut/fsm/state
+add wave -position end sim:/Testbench/uut/fsm/regWrite
+add wave -position end sim:/Testbench/uut/fsm/aluSrc
+add wave -position end sim:/Testbench/uut/fsm/aluOp
+
+# Datapath internals
+add wave -position end sim:/Testbench/uut/dp/readData1
+add wave -position end sim:/Testbench/uut/dp/readData2
+add wave -position end sim:/Testbench/uut/dp/aluResult
+add wave -position end sim:/Testbench/uut/dp/writeData
+
+
+add wave -divider "Register File Debug"
+add wave -radix hex sim:/Top/dp/debug_r0
+add wave -radix hex sim:/Top/dp/debug_r1
+add wave -radix hex sim:/Top/dp/debug_r2

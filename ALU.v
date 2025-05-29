@@ -1,20 +1,14 @@
-module ALU (
-    input [15:0] a,
-    input [15:0] b,
-    input [2:0] op,
-    output reg [15:0] result,
-    output zero
+module ALU(
+    input [15:0] a, b,
+    input [1:0] aluOp,
+    output reg [15:0] result
 );
     always @(*) begin
-        case (op)
-            3'b000: result = a + b;
-            3'b001: result = a - b;
-            3'b010: result = a & b;
-            3'b011: result = a | b;
-            3'b100: result = b;        // mov (pass through)
+        case (aluOp)
+            2'b00: result = a + b;
+            2'b01: result = a ^ b;
+            2'b11: result = b;
             default: result = 0;
         endcase
     end
-
-    assign zero = (result == 0);
 endmodule
