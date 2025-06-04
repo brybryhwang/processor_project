@@ -7,7 +7,7 @@ module FSM(
     output reg [2:0] state
 );
 
-    parameter FETCH = 3'b000, DECODE = 3'b001, EXEC = 3'b010, MEM = 3'b011, WB = 3'b100, WAIT = 3'b101;
+    parameter FETCH = 3'b000, DECODE = 3'b001, EXEC = 3'b010, MEM = 3'b011, WB = 3'b100;
 
     always @(posedge clk or posedge reset) begin
         if (reset) begin
@@ -26,8 +26,7 @@ module FSM(
                 end
                 EXEC: state <= WB;
                 MEM: state <= WB;
-                WB: state <= WAIT;
-					 WB: state <= FETCH;
+                WB: state <= FETCH;  
                 default: state <= FETCH;
             endcase
         end
@@ -44,8 +43,14 @@ module FSM(
                     4'b0100: begin regWrite = 1; aluOp = 2'b11; end // MOV
                 endcase
             end
-            MEM: begin memRead = 1; memToReg = 1; aluSrc = 1; end
-            WB: begin regWrite = 1; end
+            MEM: begin 
+                memRead = 1; 
+                memToReg = 1; 
+                aluSrc = 1; 
+            end
+            WB: begin 
+                regWrite = 1; 
+            end
         endcase
     end
 endmodule
